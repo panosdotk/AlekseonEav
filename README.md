@@ -8,6 +8,15 @@
 <p align="center">
 This module creates entities and attributes data structure and allows to manage scopable attributes.
 <br>
+
+<div align="center">
+
+![Magento 2](https://img.shields.io/badge/Magento%202-2.4.x-red.svg)
+![Production Ready](https://img.shields.io/badge/Deployment-Production--Ready-blue)
+![Complete](https://img.shields.io/badge/Status-Complete-brightgreen)
+
+</div>
+  
 <br>
 This is the core module for some of our extensions:
 <br>

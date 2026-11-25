@@ -19,6 +19,7 @@ use Magento\Store\Model\Store;
  * @package Alekseon\AlekseonEav\Model\ResourceModel
  */
 abstract class Entity extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
+    implements \Alekseon\AlekseonEav\Model\ResourceModel\EntityInterface
 {
     /**
      * @var
@@ -62,8 +63,15 @@ abstract class Entity extends \Magento\Framework\Model\ResourceModel\Db\Abstract
     }
 
     /**
+     * @return bool
+     */
+    protected function hasAllAttributeLoaded() {
+        return $this->allAttributesLoaded;
+    }
+
+    /**
      * @param $attributeCode
-     * @return mixed
+     * @return false|mixed
      */
     public function getAttribute($attributeCode)
     {
@@ -72,7 +80,7 @@ abstract class Entity extends \Magento\Framework\Model\ResourceModel\Db\Abstract
         }
 
         if (!isset($this->attributes[$attributeCode])) {
-            if ($this->allAttributesLoaded) {
+            if ($this->hasAllAttributeLoaded()) {
                 $this->notAttributeCode[$attributeCode] = $attributeCode;
                 return false;
             }
@@ -102,7 +110,7 @@ abstract class Entity extends \Magento\Framework\Model\ResourceModel\Db\Abstract
      */
     public function loadAllAttributes()
     {
-        if ($this->allAttributesLoaded) {
+        if ($this->hasAllAttributeLoaded()) {
             return $this;
         }
         $attributeCollection = $this->attributeCollectionFactory->create();
@@ -198,6 +206,9 @@ abstract class Entity extends \Magento\Framework\Model\ResourceModel\Db\Abstract
     protected function loadAttributeDefaultValue($object, $attribute)
     {
         if ($attribute->getDefaultValue() !== null) {
+            if (!$attribute->getDefaultValue() && isset($object->getSystemValues()[$attribute->getAttributeCode()])) {
+                return;
+            }
             $object->setData($attribute->getAttributeCode(), $attribute->getDefaultValue());
             $backendModels = $attribute->getBackendModels();
             foreach ($backendModels as $backendModel) {
@@ -300,10 +311,16 @@ abstract class Entity extends \Magento\Framework\Model\ResourceModel\Db\Abstract
      */
     protected function _beforeSave(\Magento\Framework\Model\AbstractModel $object) // @codingStandardsIgnoreLine
     {
-        if ($object->getId()) {
-            $attributesUseDefault = $object->getUseDefault();
-            if (is_array($attributesUseDefault)) {
-                foreach ($attributesUseDefault as $attributeCode) {
+        $attributesUseDefault = $object->getUseDefault();
+        if (is_array($attributesUseDefault)) {
+            $this->loadAllAttributes();
+            foreach ($attributesUseDefault as $attributeCode) {
+                // the list comes from the request, so anything that is not an attribute of this
+                // entity type must be ignored, otherwise any column could be reset to null
+                if (!is_string($attributeCode) || !$this->getAttribute($attributeCode)) {
+                    continue;
+                }
+                if ($object->getId() || isset($object->getSystemValues()[$attributeCode])) {
                     $object->setData($attributeCode, null);
                 }
             }
@@ -422,12 +439,21 @@ abstract class Entity extends \Magento\Framework\Model\ResourceModel\Db\Abstract
      * @return mixed
      * @throws LocalizedException
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function prepareValueForSave(
         EntityInterface $object,
         AttributeInterface $attribute
     ) {
         $attributeCode = $attribute->getAttributeCode();
+
+        if ($object->getData($attributeCode) === null
+            && $object->getStoreId() == \Magento\Store\Model\Store::DEFAULT_STORE_ID
+            && isset($object->getSystemValues()[$attributeCode])
+        ) {
+            return null;
+        }
+
         if ($object->isObjectNew() && !$object->hasData($attributeCode)) {
             $this->loadAttributeDefaultValue($object, $attribute);
         }

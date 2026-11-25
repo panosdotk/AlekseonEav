@@ -4,10 +4,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Changed
+## [101.2.28] - 2026-11-23
 ### Fixed
+- image attribute: a plain string path posted without a file upload is no longer stored, without a successful upload the value always comes from the database (only the "delete" flag is taken from the request)
+- image attribute: files are removed only when the stored path lies inside the entity's images directory (no "..", hidden or absolute paths), so a planted path like `.htaccess` in pub/media can not be deleted
+
+## [101.2.27] - 2026-11-21
 ### Added
+- input type `hasFrontendLabel()` and `canBeRequired()` options
+### Changed
+- `Alekseon\AlekseonEav\Helper\Image::resize()` parameters renamed: `$allowBiggerSize` to `$allowUpscale`, `$needResize` to `$forceResize` (affects named arguments only)
+- image attribute path is no longer taken from the request, only the "delete" flag is
+- `Alekseon\AlekseonEav\Helper\Image` constructor takes `Magento\Framework\Filesystem` instead of `Magento\Framework\App\Filesystem\DirectoryList`
+- attribute note is rendered through an html whitelist (`a`, `b`, `br`) instead of raw html
+### Fixed
+- path traversal in image attribute backend: file removal and image cache writes are now restricted to the media directory
+- "use_default" list from the request can no longer reset entity columns that are not attributes
+- sort field and direction in entity collection are no longer put into ORDER BY as a raw expression
+- attribute option labels can no longer break the admin page out of the "text/x-magento-init" block
+- missing escaping in admin grid renderers (multiselect option labels, image url) and in the attribute and entity edit templates
+- attribute code is validated on the server side, not only by the "validate-code" class in the admin form: format, max length and codes reserved by the entity save flow (`entity_id`, `store_id`, `use_default`)
+- `Alekseon\AlekseonEav\Helper\Image::resize()` used the width parameter to calculate the height
+- `Alekseon\AlekseonEav\Helper\Image::resize()` no longer fails when no image has been set
+
+## [101.2.26] - 2026-10-02
+### Fixed
+- PHP 8.4 compatibility in Model/Attribute/InputValidatorRepository.php
+
+## [101.2.25] - 2026-09-09
+### Changed
+- Delegated the allAttributesLoaded check to a dedicated hasAllAttributeLoaded()
+
+## [101.2.24] - 2026-08-21
+### Added
+- "Reset Is Default" button in attribute options
+### Fixed
+- save default option provider when default option is selected
+
+## [101.2.23] - 2026-04-16
+### Added
+- system values
+
+## [101.2.22] - 2026-02-19
+### Fixed
+- fix update attribute frontend labels
 
 ## [101.2.21] - 2026-01-23
 ### Fixed
